@@ -4,12 +4,6 @@ import { handleAction } from "@/lib/elysia/hndleAction";
 export class JokeService {
   async getRandomJoke() {
     return handleAction("GetRandomJoke", async () => {
-      throwHttpError({
-        status: 503,
-        error: "Joke API unreachable",
-        toast: "Unable to load jokes right now 😢",
-        message: "Failed to fetch joke from external API",
-      });
       const res = await fetch(
         "https://official-joke-api.appspot.com/random_joke",
       );

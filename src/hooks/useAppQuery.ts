@@ -1,74 +1,72 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useEffect } from "react"; // or whatever you use
+import { useEffect, useMemo } from "react";
+import { EdenError, ExtractEdenData, ExtractEdenError } from "@/lib/eden/types";
 
 interface UseAppQueryOptions {
   enabled?: boolean;
-  showToast?: boolean; // NEW
+  showToast?: boolean;
 }
 
-type ExtractTreatyData<T> = T extends { data?: { data?: infer U } }
-  ? U
-  : T extends { data?: infer U }
-    ? U
-    : unknown;
-
-interface AppQueryResult<TData> {
-  data: TData | undefined;
-  error: string | undefined;
-  isPending: boolean;
-  queryResult: UseQueryResult<{ data?: TData; message?: string }>;
+type EdenQueryResult<TData, TError extends EdenError> =
+  | { ok: true; data: TData }
+  | { ok: false; error: TError };
+function serializeQueryKey(key: Array<string | number | object | undefined>) {
+  return key.map((k) =>
+    typeof k === "object" && k !== null ? JSON.stringify(k) : k,
+  );
 }
-
 export function useAppQuery<TFetch extends () => Promise<any>>(
-  queryKey: (string | number | undefined)[],
+  queryKey: Array<string | number | object | undefined>,
   fetchFn: TFetch,
   options?: UseAppQueryOptions,
-): AppQueryResult<ExtractTreatyData<Awaited<ReturnType<TFetch>>>> {
-  type TData = ExtractTreatyData<Awaited<ReturnType<TFetch>>>;
-
-  const queryResult = useQuery<{
-    data?: TData;
-    message?: string;
-    toast?: string | null;
-  }>({
-    queryKey,
+) {
+  type TData = ExtractEdenData<Awaited<ReturnType<TFetch>>>;
+  type TError = ExtractEdenError<Awaited<ReturnType<TFetch>>> & EdenError;
+  const serializedKey = useMemo(() => serializeQueryKey(queryKey), [queryKey]);
+  const queryResult = useQuery<EdenQueryResult<TData, TError>>({
+    queryKey: serializedKey,
     queryFn: async () => {
       const res = await fetchFn();
+      const body = res.data ?? res.error?.value ?? null;
 
-      const body = (res.data as any) ?? (res.error.value as any) ?? null;
-      if (!body) return { message: "Unknown server response" };
-
-      // SUCCESS CASE
-      if (body.ok === true) {
-        return { data: body.data as TData };
+      if (!body) {
+        return {
+          ok: false,
+          error: {
+            ok: false,
+            status: 500,
+            error: "Unknown",
+            message: "Unknown server response",
+          } as TError,
+        };
       }
 
-      // ERROR CASE
-      return {
-        message: body.message || body.error || "Unknown server error",
-        toast: body.toast ?? null,
-      };
+      if (body.ok === true) {
+        return { ok: true, data: body.data as TData };
+      }
+
+      return { ok: false, error: body as TError };
     },
     enabled: options?.enabled ?? true,
     refetchOnWindowFocus: false,
     staleTime: 300000,
   });
 
-  // 🔥 Automatically show toast if enabled
+  // 🔥 toast support
   useEffect(() => {
-    if (
-      options?.showToast &&
-      !queryResult.isPending &&
-      queryResult.data?.toast
-    ) {
-      toast.error(queryResult.data.toast);
+    const result = queryResult.data;
+
+    if (options?.showToast && result && result.ok === false) {
+      if (result.error.toast) {
+        toast.error(result.error.toast);
+      }
     }
-  }, [queryResult.data?.toast, queryResult.isPending, options?.showToast]);
+  }, [queryResult.data, options?.showToast]);
 
   return {
-    data: queryResult.data?.data,
-    error: queryResult.data?.message,
+    data: queryResult.data?.ok ? queryResult.data.data : undefined,
+    error: !queryResult.data?.ok ? queryResult.data?.error.message : undefined,
     isPending: queryResult.isPending,
     queryResult,
   };

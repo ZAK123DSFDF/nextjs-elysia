@@ -9,7 +9,6 @@ export function RandomJoke() {
     () => api.joke.random.get(),
     { showToast: true },
   );
-
   const joke = data;
 
   return (

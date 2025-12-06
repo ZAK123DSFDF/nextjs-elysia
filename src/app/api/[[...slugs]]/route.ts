@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { JokeController } from "./joke.controller";
 import { errorPlugin } from "@/lib/elysia/error-plugin";
 
