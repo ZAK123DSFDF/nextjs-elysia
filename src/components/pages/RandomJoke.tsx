@@ -4,8 +4,10 @@ import { useAppQuery } from "@/hooks/useAppQuery";
 import { api } from "@/lib/eden";
 
 export function RandomJoke() {
-  const { data, isPending, error } = useAppQuery(["random-joke"], () =>
-    api.joke.random.get(),
+  const { data, isPending, error } = useAppQuery(
+    ["random-joke"],
+    () => api.joke.random.get(),
+    { showToast: true },
   );
 
   const joke = data;
