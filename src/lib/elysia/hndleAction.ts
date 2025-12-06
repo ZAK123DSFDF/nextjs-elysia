@@ -1,12 +1,4 @@
-import { returnElysiaError } from "@/lib/elysia/errorHandler";
-import type { ResponseData, MutationData } from "@/lib/types/response";
-
-/**
- * Elysia-safe async action wrapper.
- * - Works in controllers/services
- * - Never throws (Elysia routes must return JSON)
- */
-export async function handleAction<T extends ResponseData<any> | MutationData>(
+export async function handleAction<T>(
   name: string | null,
   fn: () => Promise<T>,
   measureTime: boolean = true,
@@ -25,6 +17,6 @@ export async function handleAction<T extends ResponseData<any> | MutationData>(
     return result;
   } catch (err) {
     console.error(`${label} error:`, err);
-    return returnElysiaError(err) as T;
+    throw err; // 🔥 Let Elysia handle this globally
   }
 }

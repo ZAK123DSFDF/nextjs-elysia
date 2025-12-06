@@ -1,9 +1,12 @@
 import { Elysia } from "elysia";
 import { JokeController } from "./joke.controller";
+import { errorPlugin } from "@/lib/elysia/error-plugin";
 
 const joke = new JokeController();
 
-const app = new Elysia({ prefix: "/api" }).get("/joke/random", joke.random);
+const app = new Elysia({ prefix: "/api" })
+  .use(errorPlugin)
+  .get("/joke/random", joke.random);
 
 export type App = typeof app;
 

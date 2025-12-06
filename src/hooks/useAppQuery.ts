@@ -1,22 +1,23 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useEffect } from "react"; // or whatever you use
 
 interface UseAppQueryOptions {
   enabled?: boolean;
+  showToast?: boolean; // NEW
 }
 
-// Extract the successful Treaty data shape
 type ExtractTreatyData<T> = T extends { data?: { data?: infer U } }
   ? U
   : T extends { data?: infer U }
     ? U
     : unknown;
 
-// Your final normalized result for React Query
 interface AppQueryResult<TData> {
   data: TData | undefined;
   error: string | undefined;
   isPending: boolean;
-  queryResult: UseQueryResult<{ data?: TData; toast?: string }>;
+  queryResult: UseQueryResult<{ data?: TData; message?: string }>;
 }
 
 export function useAppQuery<TFetch extends () => Promise<any>>(
@@ -26,45 +27,48 @@ export function useAppQuery<TFetch extends () => Promise<any>>(
 ): AppQueryResult<ExtractTreatyData<Awaited<ReturnType<TFetch>>>> {
   type TData = ExtractTreatyData<Awaited<ReturnType<TFetch>>>;
 
-  const queryResult = useQuery<{ data?: TData; toast?: string }>({
+  const queryResult = useQuery<{
+    data?: TData;
+    message?: string;
+    toast?: string | null;
+  }>({
     queryKey,
     queryFn: async () => {
       const res = await fetchFn();
 
-      // Treaty Response
-      if (res && typeof res === "object" && "data" in res && "status" in res) {
-        const ok = (res.data as any)?.ok === true;
+      const body = (res.data as any) ?? (res.error.value as any) ?? null;
+      if (!body) return { message: "Unknown server response" };
 
-        if (ok) {
-          return {
-            data: (res.data as any)?.data as TData,
-          };
-        }
-
-        return {
-          toast:
-            (res.data as any)?.toast ||
-            (res.data as any)?.error ||
-            "Unknown server error",
-        };
+      // SUCCESS CASE
+      if (body.ok === true) {
+        return { data: body.data as TData };
       }
 
-      // Standard Elysia action response
-      if (res.ok) {
-        return { data: res.data as TData };
-      }
-
-      return { toast: res.toast };
+      // ERROR CASE
+      return {
+        message: body.message || body.error || "Unknown server error",
+        toast: body.toast ?? null,
+      };
     },
     enabled: options?.enabled ?? true,
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 300000,
   });
+
+  // 🔥 Automatically show toast if enabled
+  useEffect(() => {
+    if (
+      options?.showToast &&
+      !queryResult.isPending &&
+      queryResult.data?.toast
+    ) {
+      toast.error(queryResult.data.toast);
+    }
+  }, [queryResult.data?.toast, queryResult.isPending, options?.showToast]);
 
   return {
     data: queryResult.data?.data,
-    error: queryResult.data?.toast,
+    error: queryResult.data?.message,
     isPending: queryResult.isPending,
     queryResult,
   };

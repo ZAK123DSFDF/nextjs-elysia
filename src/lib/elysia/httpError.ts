@@ -1,15 +1,17 @@
 export function throwHttpError({
   status = 400,
   error = "Request failed",
-  toast = "Something went wrong",
+  message = "Something went wrong",
+  toast = null,
   fields = null,
   data = null,
 }: {
   status?: number;
   error?: string;
-  toast?: string;
+  message?: string;
+  toast?: string | null; // optional
   fields?: Record<string, string> | null;
   data?: any;
 }) {
-  throw { ok: false, status, error, toast, fields, data };
+  throw { ok: false, status, error, message, toast, fields, data };
 }
