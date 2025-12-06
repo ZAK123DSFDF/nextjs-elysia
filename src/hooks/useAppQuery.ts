@@ -57,6 +57,7 @@ export function useAppQuery<TFetch extends () => Promise<any>>(
             (res.data as any)?.message ||
             (res.data as any)?.error ||
             "Unknown server error",
+          toast: (res.data as any)?.toast,
         };
       }
 
@@ -65,7 +66,7 @@ export function useAppQuery<TFetch extends () => Promise<any>>(
         return { data: res.data as TData };
       }
 
-      return { message: res.message };
+      return { message: res.message, toast: res.toast };
     },
     enabled: options?.enabled ?? true,
     refetchOnWindowFocus: false,
