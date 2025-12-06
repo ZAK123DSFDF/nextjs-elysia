@@ -1,23 +1,29 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useEffect } from "react"; // or whatever you use
+import { useEffect } from "react";
 
 interface UseAppQueryOptions {
   enabled?: boolean;
-  showToast?: boolean; // NEW
+  showToast?: boolean;
 }
 
+// Extract the successful Treaty data shape
 type ExtractTreatyData<T> = T extends { data?: { data?: infer U } }
   ? U
   : T extends { data?: infer U }
     ? U
     : unknown;
 
+// Your final normalized result for React Query
 interface AppQueryResult<TData> {
   data: TData | undefined;
   error: string | undefined;
   isPending: boolean;
-  queryResult: UseQueryResult<{ data?: TData; message?: string }>;
+  queryResult: UseQueryResult<{
+    data?: TData;
+    message?: string;
+    toast?: string;
+  }>;
 }
 
 export function useAppQuery<TFetch extends () => Promise<any>>(
@@ -30,42 +36,51 @@ export function useAppQuery<TFetch extends () => Promise<any>>(
   const queryResult = useQuery<{
     data?: TData;
     message?: string;
-    toast?: string | null;
+    toast?: string;
   }>({
     queryKey,
     queryFn: async () => {
       const res = await fetchFn();
 
-      const body = (res.data as any) ?? (res.error.value as any) ?? null;
-      if (!body) return { message: "Unknown server response" };
+      // Treaty Response
+      if (res && typeof res === "object" && "data" in res && "status" in res) {
+        const ok = (res.data as any)?.ok === true;
 
-      // SUCCESS CASE
-      if (body.ok === true) {
-        return { data: body.data as TData };
+        if (ok) {
+          return {
+            data: (res.data as any)?.data as TData,
+          };
+        }
+
+        return {
+          message:
+            (res.data as any)?.message ||
+            (res.data as any)?.error ||
+            "Unknown server error",
+        };
       }
 
-      // ERROR CASE
-      return {
-        message: body.message || body.error || "Unknown server error",
-        toast: body.toast ?? null,
-      };
+      // Standard Elysia action response
+      if (res.ok) {
+        return { data: res.data as TData };
+      }
+
+      return { message: res.message };
     },
     enabled: options?.enabled ?? true,
     refetchOnWindowFocus: false,
-    staleTime: 300000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
-  // 🔥 Automatically show toast if enabled
+  // ⛔ Show toast **inside the hook**
   useEffect(() => {
-    if (
-      options?.showToast &&
-      !queryResult.isPending &&
-      queryResult.data?.toast
-    ) {
-      toast.error(queryResult.data.toast);
-    }
-  }, [queryResult.data?.toast, queryResult.isPending, options?.showToast]);
+    if (!queryResult.isPending && options?.showToast !== false) {
+      const t = queryResult.data?.toast;
 
+      if (t) toast.error(t);
+    }
+  }, [queryResult.isPending, queryResult.data?.toast]);
   return {
     data: queryResult.data?.data,
     error: queryResult.data?.message,

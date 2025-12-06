@@ -1,3 +1,5 @@
+import { returnElysiaError } from "@/lib/elysia/returnElysiaError";
+
 export async function handleAction<T>(
   name: string | null,
   fn: () => Promise<T>,
@@ -17,6 +19,6 @@ export async function handleAction<T>(
     return result;
   } catch (err) {
     console.error(`${label} error:`, err);
-    throw err; // 🔥 Let Elysia handle this globally
+    return returnElysiaError(err) as T;
   }
 }
