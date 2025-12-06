@@ -13,7 +13,6 @@ export class JokeService {
       const res = await fetch(
         "https://official-joke-api.appspot.com/random_joke",
       );
-
       if (!res.ok) {
         throwHttpError({
           status: 503,
