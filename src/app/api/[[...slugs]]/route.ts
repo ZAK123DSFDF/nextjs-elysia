@@ -6,13 +6,7 @@ const joke = new JokeController();
 
 const app = new Elysia({ prefix: "/api" })
   .use(errorPlugin)
-  .get("/joke/random", joke.random, {
-    query: t.Optional(
-      t.Object({
-        animal: t.String(),
-      }),
-    ),
-  });
+  .get("/joke/random", joke.random);
 
 export type App = typeof app;
 
