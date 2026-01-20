@@ -17,7 +17,7 @@ export class JokeService {
     return handleAction("SuccessDemo", async () => {
       const duration = body.rememberMe ? 7 * 86400 : undefined;
       if (!cookie) {
-        throw throwAppError(body, {
+        throwAppError(body, {
           status: 400,
           fields: { rememberMe: "Cookie setup failed" },
         });
@@ -44,7 +44,7 @@ export class JokeService {
     return handleAction("ErrorDemo", async () => {
       const shouldError = true;
       if (shouldError) {
-        throw throwAppError({
+        throwAppError({
           status: 400,
           error: "DemoError",
           toast: "This is an intentional error!",
@@ -67,7 +67,7 @@ export class JokeService {
         "https://official-joke-api.appspot.com/random_joke",
       );
       if (!res.ok) {
-        throw throwAppError({
+        throwAppError({
           status: 503,
           error: "Joke API unreachable",
           toast: "Unable to load jokes right now 😢",

@@ -10,18 +10,17 @@ export interface ErrorConfig<T> {
 }
 
 // Overload 1: For Form Data (Inference)
-export function throwAppError<T>(data: T, options: ErrorConfig<T>): any;
+export function throwAppError<T>(data: T, options: ErrorConfig<T>): never;
 
 // Overload 2: For General Errors (No Data)
-export function throwAppError(options: ErrorConfig<Record<string, any>>): any;
+export function throwAppError(options: ErrorConfig<Record<string, any>>): never;
 
 // Implementation
-export function throwAppError(arg1: any, arg2?: any) {
+export function throwAppError(arg1: any, arg2?: any): never {
   const options = arg2 ? arg2 : arg1;
 
-  // Note: We return the object. In your service, you will write:
-  // throw throwAppError(...)
-  return {
+  // 🔥 Throwing INSIDE the function so you don't have to write it in your services
+  throw {
     ok: false as const,
     status: options.status ?? 400,
     error: options.error ?? "Request failed",
