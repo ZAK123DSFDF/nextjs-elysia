@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { JokeController } from "./joke.controller";
 import { errorPlugin } from "@/lib/elysia/error-plugin";
+import { SuccessBodySchema } from "@/lib/validation/joke";
 
 const joke = new JokeController();
 
@@ -17,7 +18,9 @@ const app = new Elysia({
   .use(errorPlugin)
   .get("/joke/random", joke.random)
   .post("/redirect", joke.redirect)
-  .post("/success", joke.success)
+  .post("/success", joke.success, {
+    body: SuccessBodySchema,
+  })
   .post("/logout", joke.logout)
   .post("/error", joke.error);
 
