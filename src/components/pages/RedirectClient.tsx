@@ -15,7 +15,7 @@ import { SuccessBody, SuccessBodySchema } from "@/lib/validation/joke";
 
 export default function RedirectClient() {
   // 1. Initialize Form with Shared Zod Schema
-  const { register, handleSubmit, control } = useForm<SuccessBody>({
+  const { register, handleSubmit, control, setError } = useForm<SuccessBody>({
     resolver: zodResolver(SuccessBodySchema),
     defaultValues: { rememberMe: false },
   });
@@ -28,8 +28,11 @@ export default function RedirectClient() {
   });
 
   // 3. Mutations
-  const successMutation = useAppMutation((data: SuccessBody) =>
-    api.success.post(data),
+  const successMutation = useAppMutation(
+    (data: SuccessBody) => api.success.post(data),
+    {
+      setError,
+    },
   );
 
   const logoutMutation = useAppMutation(() => api.logout.post());

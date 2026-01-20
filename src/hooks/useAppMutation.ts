@@ -1,6 +1,7 @@
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { EdenError, ExtractEdenData, ExtractEdenError } from "@/lib/eden/types";
+import { UseFormSetError } from "react-hook-form";
 
 interface UseAppMutationOptions<
   TData,
@@ -9,6 +10,7 @@ interface UseAppMutationOptions<
 > extends Omit<UseMutationOptions<TData, TError, TVariables>, "mutationFn"> {
   disableSuccessToast?: boolean;
   disableErrorToast?: boolean;
+  setError?: UseFormSetError<any>;
 }
 
 export function useAppMutation<TFetch extends (vars: any) => Promise<any>>(
@@ -43,7 +45,7 @@ export function useAppMutation<TFetch extends (vars: any) => Promise<any>>(
         throw body as TError; // goes to onError
       }
 
-      return body.data as TData;
+      return body as TData;
     },
 
     onSuccess: (data, variables, context, mutation) => {
@@ -53,7 +55,7 @@ export function useAppMutation<TFetch extends (vars: any) => Promise<any>>(
       }
       if (!options?.disableSuccessToast) {
         const message =
-          (data as any)?.message || "Action completed successfully.";
+          (data as any)?.toast || "Action completed successfully.";
         toast.success(message);
       }
 
@@ -62,7 +64,14 @@ export function useAppMutation<TFetch extends (vars: any) => Promise<any>>(
 
     onError: (error, variables, context, mutation) => {
       const err = error as TError;
-
+      if (err.fields && options?.setError) {
+        Object.entries(err.fields).forEach(([field, message]) => {
+          options.setError!(field as any, {
+            type: "server",
+            message: message as string,
+          });
+        });
+      }
       if (!options?.disableErrorToast) {
         toast.error(err.toast || err.message || "Something went wrong.");
       }

@@ -8,7 +8,7 @@ export class JokeController {
   random = () => this.service.getRandomJoke();
   redirect = () => this.service.redirectToDemo();
   success = ({ cookie, body }: Context<{ body: SuccessBody }>) => {
-    return this.service.successDemo(cookie, body.rememberMe);
+    return this.service.successDemo(cookie, body);
   };
   logout = ({ cookie }: Context) => this.service.logout(cookie);
   error = () => this.service.errorDemo();
