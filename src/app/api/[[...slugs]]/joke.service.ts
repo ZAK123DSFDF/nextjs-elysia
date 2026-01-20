@@ -1,4 +1,4 @@
-import { handleAction } from "@/lib/elysia/hndleAction";
+import { handleAction } from "@/lib/elysia/handleAction";
 import { Context } from "elysia";
 import { SuccessBody } from "@/lib/validation/joke";
 import { throwAppError } from "@/lib/elysia/throwAppError";
